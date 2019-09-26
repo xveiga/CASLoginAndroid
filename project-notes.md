@@ -34,39 +34,25 @@ Add to `app/build.gradle` the location of the CMake build script and the version
         }
     }
 ```
-To specify the architectures the libraries should be compiled for, add the following:
+By default, Android Studio should compile the libraries for all architectures.
+To optimize this behaviour, add the following code to generate a different APK for each architecture, plus an universal one that includes all.
 On NDK version 20, `armeabi` was removed, only `armeabi-v7a`, `arm64-v8a`, `x86` and `x86_64` are supported.
 ```
-    flavorDimensions 'cpuArch'
-    productFlavors {
-        arm7 {
-            dimension 'cpuArch'
-            ndk {
-                abiFilter 'armeabi-v7a'
-            }
-        }
-        arm8 {
-            dimension 'cpuArch'
-            ndk {
-                abiFilters 'arm64-v8a'
-            }
-        }
-        x86 {
-            dimension 'cpuArch'
-            ndk {
-                abiFilter 'x86'
-            }
-        }
-        x86_64 {
-            dimension 'cpuArch'
-            ndk {
-                abiFilter 'x86_64'
-            }
-        }
-        universal {
-            dimension 'cpuArch'
-            // include all default ABIs. with NDK-r16,  it is:
-            //   armeabi-v7a, arm64-v8a, x86, x86_64
+    // Configures multiple APKs based on ABI.
+    splits {
+        abi {
+            // Enables building multiple APKs per ABI.
+            enable true
+
+            // By default all ABIs are included, so use reset() and include to specify that we only
+            // want APKs for x86, armeabi-v7a, and mips.
+            reset()
+
+            // Specifies a list of ABIs that Gradle should create APKs for.
+            include "x86", "x86_64", "armeabi-v7a", "arm64-v8a"
+
+            // Specifies that we want to also generate a universal APK that includes all ABIs.
+            universalApk true
         }
     }
 ```
