@@ -12,6 +12,17 @@ import java.io.IOException;
  */
 public class LoginDataSource {
 
+    // Used to load the 'native-lib' library on application startup.
+    static {
+        System.loadLibrary("native-lib");
+    }
+
+    /**
+     * A native method that is implemented by the 'native-lib' native library,
+     * which is packaged with this application.
+     */
+    public native String curlTest();
+
     private static final String LOG_TAG = "LoginDataSource";
 
     private static final String moodleServiceParam = "https://moodle.udc.es/login/index.php?authCAS=CAS";
@@ -34,6 +45,7 @@ public class LoginDataSource {
     public Result<LoggedInUser> login(String username, String password) {
         Log.v("login", username);
         try {
+            /*
             // 1. Create HttpClient and CASLogin instances
             HttpClient http = new HttpClient();
             CASLogin cas = new CASLogin(http);
@@ -50,7 +62,13 @@ public class LoginDataSource {
             LoggedInUser user = new LoggedInUser((long) 0, "Jane Doe");
 
             // 7. Log out session for moodle service
-            cas.logout(moodleServiceParam);
+            cas.logout(moodleServiceParam);*/
+
+            // CURL TEST
+            String curlResult = curlTest();
+            Log.e(LOG_TAG, curlResult);
+            if (curlResult == null || curlResult.isEmpty()) throw new Exception("Curl Failure, check logs");
+            LoggedInUser user = new LoggedInUser((long) 0, "Jane Doe");
             return new Result.Success<>(user);
         } catch (Exception e) {
             Log.e(LOG_TAG, "Exception: " + e.toString());

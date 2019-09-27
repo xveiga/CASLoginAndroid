@@ -1,9 +1,47 @@
 # For more information about using CMake with Android Studio, read the
 # documentation: https://d.android.com/studio/projects/add-native-code.html
 
-# Sets the minimum version of CMake required to build the native library.
+# If set to SHARED, add this to the app gradle scripts to pack the required libraries on the apk.
+#// Shared libraries
+# sourceSets {
+#    main {
+#        // let gradle pack the shared library into apk
+#        jniLibs.srcDirs = ['../distribution/curl', '../distribution/openssl']
+#    }
+# }
+set(library_link_mode STATIC)
 
+# Sets the minimum version of CMake required to build the native library.
 cmake_minimum_required(VERSION 3.4.1)
+
+# Set compiled library directory
+set(distribution_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../../../distribution)
+
+## LIBSSL
+
+# Set it as static
+add_library(lib_ssl ${library_link_mode} IMPORTED)
+# Set location depending on target ABI
+set_target_properties(lib_ssl PROPERTIES IMPORTED_LOCATION
+        ${distribution_DIR}/openssl/${ANDROID_ABI}/lib/libssl.a)
+
+## LIBCRYPTO
+
+# Set it as shared/static
+add_library(lib_crypto ${library_link_mode} IMPORTED)
+# Set location depending on target ABI
+set_target_properties(lib_crypto PROPERTIES IMPORTED_LOCATION
+        ${distribution_DIR}/openssl/${ANDROID_ABI}/lib/libcrypto.a)
+
+## LIBCURL
+
+# Set it as shared/static
+add_library(lib_curl ${library_link_mode} IMPORTED)
+# Set location depending on target ABI
+set_target_properties(lib_curl PROPERTIES IMPORTED_LOCATION
+        ${distribution_DIR}/curl/${ANDROID_ABI}/lib/libcurl.a)
+
+# For JNI interface, "C to Java" bridge code:
 
 # Creates and names a library, sets it as either STATIC
 # or SHARED, and provides the relative paths to its source code.
@@ -32,6 +70,11 @@ find_library( # Sets the name of the path variable.
         # you want CMake to locate.
         log)
 
+# Set include directories
+target_include_directories(native-lib PRIVATE
+        ${distribution_DIR}/openssl/${ANDROID_ABI}/include
+        ${distribution_DIR}/curl/${ANDROID_ABI}/include)
+
 # Specifies libraries CMake should link to your target library. You
 # can link multiple libraries, such as libraries you define in this
 # build script, prebuilt third-party libraries, or system libraries.
@@ -41,4 +84,9 @@ target_link_libraries( # Specifies the target library.
 
         # Links the target library to the log library
         # included in the NDK.
-        ${log-lib})
+        ${log-lib}
+
+        # Add OpenSSL and cURL
+        lib_curl # libcurl depends on libssl
+        lib_ssl  # libssl depends on libcrypto
+        lib_crypto)
