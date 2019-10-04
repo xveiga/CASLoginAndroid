@@ -9,7 +9,7 @@
 #        jniLibs.srcDirs = ['../distribution/curl', '../distribution/openssl']
 #    }
 # }
-set(library_link_mode STATIC)
+set(library_link_mode STATIC) # Either STATIC or SHARED
 
 # Sets the minimum version of CMake required to build the native library.
 cmake_minimum_required(VERSION 3.4.1)
@@ -51,7 +51,7 @@ set_target_properties(lib_curl PROPERTIES IMPORTED_LOCATION
 add_library( # Sets the name of the library.
         native-lib
 
-        # Sets the library as a shared library.
+        # Sets the library as a shared library. JNI does not support embedding static code.
         SHARED
 
         # Provides a relative path to your source file(s).

@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # Configuration variables for automatic cURL and OpenSSL build script.
-# Load inside script by executing 'source configuration'
+# Load inside script by executing 'source config-vars.sh'
 
 # Android NDK root location
 ANDROID_NDK_HOME=$HOME/Android/Sdk/ndk/20.0.5594570
@@ -13,8 +13,10 @@ MIN_SDK_VERSION=21
 HOST_TAG=linux-x86_64
 
 # Target ABI's to compile the libraries for. SDK versions lower than 21 do not
-# support targeting 64 bit architectures.
-TARGET_HOSTS=("armeabi-v7a" "x86")
+# support targeting 64 bit architectures. Latest NDK revision does not longer
+# support mips or plain armeabi architectures.
+TARGET_HOSTS=("armeabi-v7a" "arm64-v8a" "x86" "x86_64")
+#TARGET_HOSTS=("armeabi-v7a")
 
 # Versions of the libraries used. Please double check that the cURL version
 # supports the same OpenSSL interface version, otherwise linking will fail.
@@ -22,6 +24,9 @@ CURL_VERSION="7.46.0"
 OPENSSL_VERSION="1.0.2t"
 
 # Additional parameters for the OpenSSL Configure script
+# Clang options: -Oz (optimize size smallest possible), -fno-integrated-as (less strict inline asm rules)
+# -fPIC (Position independent code, needed for custom library integration)
+#OPENSSL_CONFIGURATION="enable-weak-ssl-ciphers enable-ssl2 enable-ssl3 enable-ssl3-method no-shared no-tests no-deprecated zlib -Oz -fno-integrated-as"
 OPENSSL_CONFIGURATION="enable-weak-ssl-ciphers enable-ssl2 enable-ssl3 enable-ssl3-method -fPIC -Oz -fno-integrated-as"
 
 # Additional compiler and linker flags

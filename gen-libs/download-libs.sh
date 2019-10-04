@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# Load configuration
 source config-vars.sh
 
 create_tar_dir() {
@@ -59,4 +60,4 @@ unpack_openssl
 download_curl
 unpack_curl
 
-echo -e "${LIGHT_CYAN}Done. Run './build-openssl.sh' next.${NC}"
+echo -e "${LIGHT_CYAN}Done.${NC}"

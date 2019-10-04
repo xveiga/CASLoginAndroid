@@ -10,6 +10,12 @@ android {
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+
+        /*ndk {
+            // Specifies the ABI configurations of your native
+            // libraries Gradle should build and package with your APK.
+            abiFilters 'x86', 'x86_64', 'armeabi-v7a', 'arm64-v8a'
+        }*/
     }
     buildTypes {
         release {
@@ -27,20 +33,25 @@ android {
             // Enables building multiple APKs per ABI.
             enable true
 
-            // By default all ABIs are included, so use reset() and include to specify that we only
-            // want APKs for x86, armeabi-v7a, and mips.
+            // By default all ABIs are included, so use reset() and include to specify exactly what we want.
             reset()
 
             // Specifies a list of ABIs that Gradle should create APKs for.
-            //include "x86", "x86_64", "armeabi-v7a", "arm64-v8a"
-            include "x86", "armeabi-v7a"
+            include 'x86', 'x86_64', 'armeabi-v7a', 'arm64-v8a'
 
             // Specifies that we want to also generate a universal APK that includes all ABIs.
             universalApk true
         }
     }
 
-    // Native code build for cURL
+    // Shared libraries
+    /*sourceSets {
+        main {
+            // let gradle pack the shared library into apk
+            jniLibs.srcDirs '../distribution/curl', '../distribution/openssl'
+        }
+    }*/
+
     externalNativeBuild {
         cmake {
             path "src/main/cpp/CMakeLists.txt"

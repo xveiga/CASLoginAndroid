@@ -1,22 +1,5 @@
 #!/bin/bash
 
-#CURL_VERSION="7.46.0"
-
-#TARGET_HOSTS=("armeabi-v7a" "arm64-v8a" "x86" "x86_64")
-#TARGET_HOSTS=("armeabi-v7a" "x86")
-
-#MIN_SDK_VERSION=21
-
-#HOST_TAG=linux-x86_64
-#export ANDROID_NDK_HOME=$HOME/Android/Sdk/ndk/20.0.5594570
-
-#BASE_DIR=${PWD}
-#CURL_SRC_DIR="$BASE_DIR/src/curl-$CURL_VERSION"
-#CURL_BUILD_DIR="$BASE_DIR/../distribution/curl"
-#OPENSSL_BUILD_DIR="$BASE_DIR/../distribution/openssl"
-
-#NJOBS=$(getconf _NPROCESSORS_ONLN)
-
 # Load configuration
 source config-vars.sh
 
@@ -33,10 +16,7 @@ for CURRENT_TARGET in "${TARGET_HOSTS[@]}"; do
     echo -e "${GREEN}Configuring cURL for $CURRENT_TARGET...${NC}"
     case $CURRENT_TARGET in
         armeabi-v7a)
-            mkdir -p $CURL_BUILD_DIR/$CURRENT_TARGET
-
             TARGET_HOST=armv7a-linux-androideabi
-            echo -e "${GREEN}-> Setting target host as $TARGET_HOST${NC}"
             export AR=$TOOLCHAIN/bin/arm-linux-androideabi-ar
             export AS=$TOOLCHAIN/bin/arm-linux-androideabi-as
             export CC=$TOOLCHAIN/bin/$TARGET_HOST$MIN_SDK_VERSION-clang
@@ -46,11 +26,30 @@ for CURRENT_TARGET in "${TARGET_HOSTS[@]}"; do
             export NM=$TOOLCHAIN/bin/arm-linux-androideabi-nm
             export STRIP=$TOOLCHAIN/bin/arm-linux-androideabi-strip
         ;;
+        arm64-v8a)
+            TARGET_HOST=aarch64-linux-android
+            export AR=$TOOLCHAIN/bin/$TARGET_HOST-ar
+            export AS=$TOOLCHAIN/bin/$TARGET_HOST-as
+            export CC=$TOOLCHAIN/bin/$TARGET_HOST$MIN_SDK_VERSION-clang
+            export CXX=$TOOLCHAIN/bin/$TARGET_HOST$MIN_SDK_VERSION-clang++
+            export LD=$TOOLCHAIN/bin/$TARGET_HOST-ld
+            export RANLIB=$TOOLCHAIN/bin/$TARGET_HOST-ranlib
+            export NM=$TOOLCHAIN/bin/$TARGET_HOST-nm
+            export STRIP=$TOOLCHAIN/bin/$TARGET_HOST-strip
+        ;;
         x86)
-            mkdir -p $CURL_BUILD_DIR/$CURRENT_TARGET
-
             TARGET_HOST=i686-linux-android
-            echo -e "${GREEN}-> Setting target host as $TARGET_HOST${NC}"
+            export AR=$TOOLCHAIN/bin/$TARGET_HOST-ar
+            export AS=$TOOLCHAIN/bin/$TARGET_HOST-as
+            export CC=$TOOLCHAIN/bin/$TARGET_HOST$MIN_SDK_VERSION-clang
+            export CXX=$TOOLCHAIN/bin/$TARGET_HOST$MIN_SDK_VERSION-clang++
+            export LD=$TOOLCHAIN/bin/$TARGET_HOST-ld
+            export RANLIB=$TOOLCHAIN/bin/$TARGET_HOST-ranlib
+            export NM=$TOOLCHAIN/bin/$TARGET_HOST-nm
+            export STRIP=$TOOLCHAIN/bin/$TARGET_HOST-strip
+        ;;
+        x86_64)
+            TARGET_HOST=x86_64-linux-android
             export AR=$TOOLCHAIN/bin/$TARGET_HOST-ar
             export AS=$TOOLCHAIN/bin/$TARGET_HOST-as
             export CC=$TOOLCHAIN/bin/$TARGET_HOST$MIN_SDK_VERSION-clang
@@ -61,11 +60,18 @@ for CURRENT_TARGET in "${TARGET_HOSTS[@]}"; do
             export STRIP=$TOOLCHAIN/bin/$TARGET_HOST-strip
         ;;
     esac
-    echo -e "${BLUE}Linking with OpenSSL from '$OPENSSL_BUILD_DIR/$CURRENT_TARGET${NC}''"
 
-    export CFLAGS="-Oz -ffunction-sections -fdata-sections -fno-unwind-tables -fno-asynchronous-unwind-tables -I${OPENSSL_BUILD_DIR}/${CURRENT_TARGET}/include/openssl"
-    export CPPFLAGS=${CFLAGS}
-    export LDFLAGS="-Wl,-s -Wl,-Bsymbolic -Wl,--gc-sections -L${OPENSSL_BUILD_DIR}/${CURRENT_TARGET}/lib"
+    echo -e "${GREEN}-> Target host set as $TARGET_HOST${NC}"
+    echo -e "${YELLOW}Will link with OpenSSL from '$OPENSSL_BUILD_DIR/$CURRENT_TARGET${NC}''"
+
+    export CFLAGS
+    export CPPFLAGS="${CFLAGS} -I${OPENSSL_BUILD_DIR}/${CURRENT_TARGET}/include/openssl"
+    export LDFLAGS="${LDFLAGS} -L${OPENSSL_BUILD_DIR}/${CURRENT_TARGET}/lib"
+
+    # Clear target directories in project for current arch
+    echo -e "Cleaning build directory: ${CURL_BUILD_DIR}/${CURRENT_TARGET}"
+    rm -rf ${CURL_BUILD_DIR}/${CURRENT_TARGET}
+    mkdir -p ${CURL_BUILD_DIR}/${CURRENT_TARGET}
 
     ./configure --host=${TARGET_HOST} \
                 --target=${TARGET_HOST} \
@@ -78,7 +84,6 @@ for CURRENT_TARGET in "${TARGET_HOSTS[@]}"; do
                 --disable-unix-sockets \
                 --disable-ares \
                 --disable-rtsp \
-                --disable-ipv6 \
                 --disable-proxy \
                 --disable-versioned-symbols \
                 --enable-hidden-symbols \
