@@ -3,7 +3,6 @@ package com.example.caslogin.data;
 import android.util.Log;
 
 import com.example.caslogin.data.model.LoggedInUser;
-import com.example.caslogin.data.utils.HttpClient;
 
 import java.io.IOException;
 
@@ -29,11 +28,11 @@ public class LoginDataSource {
 
     /*
     Login process:
-        1. Create HttpClient instance, it will contains all cookies for session tracking.
+        1. Create NativeHttpClient instance, it will contains all cookies for session tracking.
         It's necessary to indicate the URL of the service, to prevent unwanted redirects to the
         login page again (see CASLogin notes for more information).
-        2. Let CASLogin authenticate. The HttpClient then will have access to that service.
-        3. Use that HttpClient instance to navigate to the moodle user preferences
+        2. Let CASLogin authenticate. The NativeHttpClient then will have access to that service.
+        3. Use that NativeHttpClient instance to navigate to the moodle user preferences
         (https://moodle.udc.es/user/preferences.php).
         4. Find the link to the "security keys" (tokens) page, and get the sesskey parameter on the url.
         5. Get the token management page (https://moodle.udc.es/user/managetoken.php?sesskey=),
@@ -46,8 +45,8 @@ public class LoginDataSource {
         Log.v("login", username);
         try {
             /*
-            // 1. Create HttpClient and CASLogin instances
-            HttpClient http = new HttpClient();
+            // 1. Create NativeHttpClient and CASLogin instances
+            NativeHttpClient http = new NativeHttpClient();
             CASLogin cas = new CASLogin(http);
 
             // 2. Authenticate
@@ -56,7 +55,6 @@ public class LoginDataSource {
             http.setHost("moodle.udc.es");
 
             // 3. Navigate to preferences page
-            // TODO Error: ssl handshake failure
             String prefsPage = http.httpsGet("https://moodle.udc.es/user/preferences.php");
             Log.v(LOG_TAG, prefsPage);
             LoggedInUser user = new LoggedInUser((long) 0, "Jane Doe");

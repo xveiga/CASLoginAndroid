@@ -1,10 +1,9 @@
-package com.example.caslogin.data.utils;
-
-import android.util.Log;
+package com.example.caslogin.data.utils.httpclient.java;
 
 import com.example.caslogin.data.utils.exceptions.HttpClientException;
 import com.example.caslogin.data.utils.exceptions.URLEncodingException;
 import com.example.caslogin.data.utils.exceptions.UnexpectedHTTPStatusCode;
+import com.example.caslogin.data.utils.httpclient.HttpClient;
 
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
@@ -26,7 +25,7 @@ import java.util.zip.GZIPInputStream;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLSocketFactory;
 
-public class HttpClient {
+public class NativeHttpClient implements HttpClient {
 
 	/*
 	 * DISCLAIMER: This HTTP client implementation DOES NOT check which cookies belong
@@ -34,7 +33,7 @@ public class HttpClient {
 	 * for any domain. Please use different instances to handle different websites.
 	 */
 
-	private static final String LOG_TAG = "HttpClient";
+	private static final String LOG_TAG = "NativeHttpClient";
 	private static final String ACCEPT_ENCODING = "gzip"; // Fixed value for gzip support.
 
 	private String USER_AGENT = "Mozilla/5.0";
@@ -53,7 +52,7 @@ public class HttpClient {
 	private List<String> cookies;
 	private int lastStatusCode = -1;
 
-	public HttpClient() {
+	public NativeHttpClient() {
 		cookies = new ArrayList<>();
 		sf = new TLSSocketFactory();
 	}

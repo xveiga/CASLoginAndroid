@@ -2,8 +2,8 @@ package com.example.caslogin.data;
 
 import android.util.Log;
 
-import com.example.caslogin.data.utils.HttpClient;
-import com.example.caslogin.data.utils.HttpConstants;
+import com.example.caslogin.data.utils.httpclient.java.NativeHttpClient;
+import com.example.caslogin.data.utils.httpclient.java.HttpConstants;
 import com.example.caslogin.data.utils.exceptions.HttpClientException;
 import com.example.caslogin.data.utils.exceptions.URLEncodingException;
 import com.example.caslogin.data.utils.exceptions.UnexpectedHTTPStatusCode;
@@ -17,7 +17,7 @@ public class CASLogin {
 
     /**
      *  This class contains methods to allow login and logout functions on UDC's Central Authentication System (CAS).
-     *  It requires a HttpClient instance, which is used to navigate through CAS's web page. The instance remains authenticated afterwards.
+     *  It requires a NativeHttpClient instance, which is used to navigate through CAS's web page. The instance remains authenticated afterwards.
      */
 
     /*
@@ -45,10 +45,10 @@ public class CASLogin {
     private static final String loginWrongCredentials = "As credenciais proporcionadas non parecen correctas.";
     private static final String logoutConfirmation = "A súa sesión foi pechada correctamente"; // Same as above for logout
 
-    private HttpClient httpClient; // HttpClient instance that will be authenticated
+    private NativeHttpClient nativeHttpClient; // NativeHttpClient instance that will be authenticated
 
-    public CASLogin(HttpClient client) {
-        httpClient = client;
+    public CASLogin(NativeHttpClient client) {
+        nativeHttpClient = client;
     }
 
     public void login(String service, String username, String password) throws IOException, UnexpectedHTTPStatusCode, URLEncodingException, HttpClientException, CASLoginException {
@@ -56,15 +56,15 @@ public class CASLogin {
         if (service != null && !service.isEmpty())
             url = URLEncoder.encode("?service=", HttpConstants.HTTP_ENCODING.name());
         Log.v("CASLogin", "urlparams:" + url);
-        httpClient.setHostActive(true);
-        httpClient.setHost("cas.udc.es");
-        String loginContent = httpClient.httpsGet(baseURL + loginPage + url);
+        nativeHttpClient.setHostActive(true);
+        nativeHttpClient.setHost("cas.udc.es");
+        String loginContent = nativeHttpClient.httpsGet(baseURL + loginPage + url);
         String actionUrl = findRegex(loginContent, formActionRegex, 1);
         String[] formValues = {null, null, "e1s1", "submit", "Iniciar+sesión"};
         formValues[0] = username;
         formValues[1] = password;
-        String parameters = httpClient.encodeParameters(formKeys, formValues); // Encode parameters to send through HTTP.
-        String loginResponse = httpClient.httpsPostForm(baseURL + actionUrl, parameters.toCharArray()); //TODO: Remove toCharArray. Was used in Java implementation to protect passwords.
+        String parameters = nativeHttpClient.encodeParameters(formKeys, formValues); // Encode parameters to send through HTTP.
+        String loginResponse = nativeHttpClient.httpsPostForm(baseURL + actionUrl, parameters.toCharArray()); //TODO: Remove toCharArray. Was used in Java implementation to protect passwords.
         Log.v("CASLogin", "webpage:" + loginResponse);
         if (!loginResponse.contains(loginConfirmation)) {
             if (loginResponse.contains(loginWrongCredentials))
@@ -78,14 +78,14 @@ public class CASLogin {
         String url = "";
         if (service != null && !service.isEmpty())
             url = URLEncoder.encode("?service=", HttpConstants.HTTP_ENCODING.name());
-        String logoutContent = httpClient.httpsGet(baseURL + logoutPage + url);
+        String logoutContent = nativeHttpClient.httpsGet(baseURL + logoutPage + url);
         Log.v("CASLogin", "webpage:" + logoutContent);
         if (!logoutContent.contains(logoutConfirmation))
             throw new CASLoginException("Unknown error during logout");
     }
 
-    public HttpClient getHttpClient () {
-        return httpClient;
+    public NativeHttpClient getNativeHttpClient() {
+        return nativeHttpClient;
     }
 
 }

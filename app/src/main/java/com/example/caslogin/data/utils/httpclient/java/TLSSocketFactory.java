@@ -1,4 +1,4 @@
-package com.example.caslogin.data.utils;
+package com.example.caslogin.data.utils.httpclient.java;
 
 import android.net.SSLCertificateSocketFactory;
 
