@@ -1,89 +1,66 @@
 package com.example.caslogin.data.utils.httpclient.curl;
 
+import android.util.Log;
+
+import com.example.caslogin.BuildConfig;
 import com.example.caslogin.data.utils.exceptions.HttpClientException;
-import com.example.caslogin.data.utils.exceptions.URLEncodingException;
 import com.example.caslogin.data.utils.exceptions.UnexpectedHTTPStatusCode;
 import com.example.caslogin.data.utils.httpclient.HttpClient;
-import com.example.caslogin.data.utils.httpclient.java.HttpConstants;
-import com.example.caslogin.data.utils.httpclient.java.TLSSocketFactory;
+import com.example.caslogin.data.utils.httpclient.HttpConstants;
+import com.example.caslogin.data.utils.httpclient.HttpUtils;
 
-import java.io.BufferedReader;
-import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.UnsupportedEncodingException;
 import java.net.URL;
-import java.net.URLEncoder;
-import java.nio.ByteBuffer;
-import java.nio.CharBuffer;
 import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.zip.GZIPInputStream;
-
-import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.SSLSocketFactory;
 
 public class CurlHttpClient implements HttpClient {
 
+	/* Load the native library acting as bridge between native curl library and java code.
+	   BuildConfig.NATIVE_LIB_NAME is a constant defined in build.gradle for the app
+	 */
+	static {
+		System.loadLibrary(BuildConfig.NATIVE_LIB_NAME);
+	}
+
+	public native void curlInit();
+	public native void curlCleanup();
+	public native String curlGet(String url);
+	public native String curlPost(String url, String postfields);
+	public native int curlHttpCode();
+
 	private static final String LOG_TAG = "CurlHttpClient";
 
-	private String USER_AGENT = "Mozilla/5.0";
-	private String ACCEPT = "text/html";
-	private String ACCEPT_LANGUAGE = "es-ES";
-	private String REFERRER = null;
-	private String HOST = null;
-	private Charset encoding = HttpConstants.HTTP_ENCODING;
-
-	private boolean gzipSupport = false; // Encoding support switch.
-	private boolean referrerActive = false; // POST referrer header sending switch.
-	private boolean hostActive = false; // POST host header sending switch.
-
-	private int lastStatusCode = -1;
-
 	public CurlHttpClient() {
-
+		curlInit();
 	}
 
 	public String httpsGet(String url) throws IOException, UnexpectedHTTPStatusCode {
-
-		URL obj = new URL(url); // transform String to URL
-
-		//lastStatusCode = conn.getResponseCode();
-
-		if (lastStatusCode == 200) { // Code 200 means SUCCESS
-
-		} else {
-			throw new UnexpectedHTTPStatusCode("Server replied with code " + lastStatusCode); // Throw exception if server doesn't reply with OK
-		}
-
-		return null; // return HTTP response
+		String response = curlGet(url);
+		// Debug code to view redirects instead of handling them automatically with curl
+		/*Log.d(LOG_TAG, "GET " + url + ": " + response);
+		if (curlHttpCode()/100 == 3) {
+			Log.d(LOG_TAG, "Redirect: " + response);
+			response = httpsGet(response);
+		}*/
+		return response;
 	}
 
-	public String httpsPostForm(String url, char[] postParams) throws IOException, HttpClientException, UnexpectedHTTPStatusCode {
-
-		URL obj = new URL(url); // transform String to URL
-
-		//lastStatusCode =  conn.getResponseCode(); // Execute request
-		switch (lastStatusCode) {
-			case 200: // OK
-
-			break;
-			case 302: // Redirect, return new location.
-				String location = "";
-				if (location.isEmpty())
-					throw new HttpClientException("\"Location\" header was not found for HTTP code 302");
-				return location;
-			default:
-				throw new UnexpectedHTTPStatusCode("Server replied with code " + lastStatusCode);
-		}
-		return null;
+	public String httpsPostForm(String url, String postParams) throws IOException, HttpClientException, UnexpectedHTTPStatusCode {
+		String response = curlPost(url, postParams);
+		// Debug code to view redirects instead of handling them automatically with curl
+		/*Log.d(LOG_TAG, "POST " + url + ": " + response);
+		if (curlHttpCode()/100 == 3) {
+			Log.d(LOG_TAG, "Redirect: " + response);
+			response = httpsGet(response);
+		}*/
+		return response;
 	}
 
 	public int getLastStatusCode() {
-		return lastStatusCode;
+		return curlHttpCode();
+	}
+
+	public void destroy() {
+		curlCleanup();
 	}
 }

@@ -10,6 +10,8 @@
 #    }
 # }
 set(library_link_mode STATIC) # Either STATIC or SHARED
+set(custom_library_name http-lib) # Name of the library. Must match NATIVE_LIB_NAME on app gradle file.
+set(custom_library_source_files http-lib.cpp) # Source files to include on library
 
 # Sets the minimum version of CMake required to build the native library.
 cmake_minimum_required(VERSION 3.4.1)
@@ -49,13 +51,13 @@ set_target_properties(lib_curl PROPERTIES IMPORTED_LOCATION
 # Gradle automatically packages shared libraries with your APK.
 
 add_library( # Sets the name of the library.
-        native-lib
+        ${custom_library_name}
 
         # Sets the library as a shared library. JNI does not support embedding static code.
         SHARED
 
         # Provides a relative path to your source file(s).
-        native-lib.cpp)
+        ${custom_library_source_files})
 
 # Searches for a specified prebuilt library and stores the path as a
 # variable. Because CMake includes system libraries in the search path by
@@ -71,7 +73,7 @@ find_library( # Sets the name of the path variable.
         log)
 
 # Set include directories
-target_include_directories(native-lib PRIVATE
+target_include_directories(http-lib PRIVATE
         ${distribution_DIR}/openssl/${ANDROID_ABI}/include
         ${distribution_DIR}/curl/${ANDROID_ABI}/include)
 
@@ -80,7 +82,7 @@ target_include_directories(native-lib PRIVATE
 # build script, prebuilt third-party libraries, or system libraries.
 
 target_link_libraries( # Specifies the target library.
-        native-lib
+        ${custom_library_name}
 
         # Links the target library to the log library
         # included in the NDK.

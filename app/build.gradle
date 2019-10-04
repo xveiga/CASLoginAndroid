@@ -21,9 +21,24 @@ android {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            /* The following fields will change dynamically the code:
+               KEEP THE SINGLE QUOTES ENCLOSING DOUBLE QUOTES as the variables are
+               replaced directly inside java code. */
+
+            // Native library name (must match CMakeLists.txt)
+            buildConfigField 'String', 'NATIVE_LIB_NAME', '"http-lib"'
+
+            // Http client implementation to use (native java or jni curl interface)
+            buildConfigField 'String', 'HTTP_CLIENT_FACTORY_CLASS', '"com.example.caslogin.data.utils.httpclient.curl.CurlHttpClient"'
         }
         debug {
             jniDebuggable = true
+
+            // Native library name (must match CMakeLists.txt)
+            buildConfigField 'String', 'NATIVE_LIB_NAME', '"http-lib"'
+
+            // Http client implementation to use (native java or jni curl interface)
+            buildConfigField 'String', 'HTTP_CLIENT_FACTORY_CLASS', '"com.example.caslogin.data.utils.httpclient.curl.CurlHttpClient"'
         }
     }
 

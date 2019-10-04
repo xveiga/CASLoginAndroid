@@ -9,7 +9,9 @@ public interface HttpClient {
 
     String httpsGet(String url) throws IOException, UnexpectedHTTPStatusCode;
 
-    String httpsPostForm(String url, char[] postParams) throws IOException, HttpClientException, UnexpectedHTTPStatusCode;
+    String httpsPostForm(String url, String postParams) throws IOException, HttpClientException, UnexpectedHTTPStatusCode;
 
     int getLastStatusCode();
+
+    void destroy();
 }

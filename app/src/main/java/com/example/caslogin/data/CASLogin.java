@@ -2,14 +2,16 @@ package com.example.caslogin.data;
 
 import android.util.Log;
 
-import com.example.caslogin.data.utils.httpclient.java.NativeHttpClient;
-import com.example.caslogin.data.utils.httpclient.java.HttpConstants;
+import com.example.caslogin.data.utils.httpclient.HttpClient;
+import com.example.caslogin.data.utils.httpclient.HttpConstants;
 import com.example.caslogin.data.utils.exceptions.HttpClientException;
 import com.example.caslogin.data.utils.exceptions.URLEncodingException;
 import com.example.caslogin.data.utils.exceptions.UnexpectedHTTPStatusCode;
+import com.example.caslogin.data.utils.httpclient.HttpUtils;
 
 import java.io.IOException;
 import java.net.URLEncoder;
+import java.nio.charset.Charset;
 
 import static com.example.caslogin.data.utils.RegexUtil.findRegex;
 
@@ -17,7 +19,7 @@ public class CASLogin {
 
     /**
      *  This class contains methods to allow login and logout functions on UDC's Central Authentication System (CAS).
-     *  It requires a NativeHttpClient instance, which is used to navigate through CAS's web page. The instance remains authenticated afterwards.
+     *  It requires a JavaHttpClient instance, which is used to navigate through CAS's web page. The instance remains authenticated afterwards.
      */
 
     /*
@@ -41,31 +43,35 @@ public class CASLogin {
     private static final String formActionRegex = "<form id=\"fm1\" class=\"fm-v\" action=\"(.*?)\" method=\"post\">"; // Regex to find login form POST URL
     private static final String[] formKeys = {"username", "password", "lt", "_eventId", "submit_button"}; // Form values expected
 
-    private static final String loginConfirmation = "Inicio de sesión correcto"; // Page must contain this to consider it a successful login
+    private static final String CAS_LOGIN_CONFIRMATION = "Inicio de sesión correcto"; // Page must contain this to consider it a successful login. Only use if no service params are specified.
     private static final String loginWrongCredentials = "As credenciais proporcionadas non parecen correctas.";
     private static final String logoutConfirmation = "A súa sesión foi pechada correctamente"; // Same as above for logout
 
-    private NativeHttpClient nativeHttpClient; // NativeHttpClient instance that will be authenticated
+    private HttpClient httpClient; // HttpClient instance that will be authenticated
+    private static final Charset encoding = HttpConstants.HTTP_ENCODING;
 
-    public CASLogin(NativeHttpClient client) {
-        nativeHttpClient = client;
+    public CASLogin(HttpClient client) {
+        httpClient = client;
     }
 
-    public void login(String service, String username, String password) throws IOException, UnexpectedHTTPStatusCode, URLEncodingException, HttpClientException, CASLoginException {
+    public void login(String username, String password) throws IOException, UnexpectedHTTPStatusCode, URLEncodingException, HttpClientException, CASLoginException {
+        login(null, username, password, CAS_LOGIN_CONFIRMATION);
+    }
+
+    // TODO: Check for illegal state exception: unmatched regex
+    public void login(String service, String username, String password, String loginConfirmation) throws IOException, UnexpectedHTTPStatusCode, URLEncodingException, HttpClientException, CASLoginException {
         String url = "";
         if (service != null && !service.isEmpty())
-            url = URLEncoder.encode("?service=", HttpConstants.HTTP_ENCODING.name());
+            url = "?service=" + URLEncoder.encode(service, encoding.name());
         Log.v("CASLogin", "urlparams:" + url);
-        nativeHttpClient.setHostActive(true);
-        nativeHttpClient.setHost("cas.udc.es");
-        String loginContent = nativeHttpClient.httpsGet(baseURL + loginPage + url);
+        String loginContent = httpClient.httpsGet(baseURL + loginPage + url);
         String actionUrl = findRegex(loginContent, formActionRegex, 1);
         String[] formValues = {null, null, "e1s1", "submit", "Iniciar+sesión"};
         formValues[0] = username;
         formValues[1] = password;
-        String parameters = nativeHttpClient.encodeParameters(formKeys, formValues); // Encode parameters to send through HTTP.
-        String loginResponse = nativeHttpClient.httpsPostForm(baseURL + actionUrl, parameters.toCharArray()); //TODO: Remove toCharArray. Was used in Java implementation to protect passwords.
-        Log.v("CASLogin", "webpage:" + loginResponse);
+        String parameters = HttpUtils.encodeParameters(formKeys, formValues, encoding); // Encode parameters to send through HTTP.
+        String loginResponse = httpClient.httpsPostForm(baseURL + actionUrl, parameters);
+        //Log.v("CASLogin", "webpage:" + loginResponse);
         if (!loginResponse.contains(loginConfirmation)) {
             if (loginResponse.contains(loginWrongCredentials))
                 throw new CASLoginException("Wrong credentials");
@@ -77,15 +83,15 @@ public class CASLogin {
     public void logout(String service) throws IOException, UnexpectedHTTPStatusCode, CASLoginException {
         String url = "";
         if (service != null && !service.isEmpty())
-            url = URLEncoder.encode("?service=", HttpConstants.HTTP_ENCODING.name());
-        String logoutContent = nativeHttpClient.httpsGet(baseURL + logoutPage + url);
-        Log.v("CASLogin", "webpage:" + logoutContent);
+            url = "?service=" + URLEncoder.encode(service, encoding.name());
+        String logoutContent = httpClient.httpsGet(baseURL + logoutPage + url);
+        //Log.v("CASLogin", "webpage:" + logoutContent);
         if (!logoutContent.contains(logoutConfirmation))
             throw new CASLoginException("Unknown error during logout");
     }
 
-    public NativeHttpClient getNativeHttpClient() {
-        return nativeHttpClient;
+    public HttpClient getHttpClient() {
+        return httpClient;
     }
 
 }

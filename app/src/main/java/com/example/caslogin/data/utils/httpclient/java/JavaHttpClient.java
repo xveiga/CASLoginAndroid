@@ -4,6 +4,8 @@ import com.example.caslogin.data.utils.exceptions.HttpClientException;
 import com.example.caslogin.data.utils.exceptions.URLEncodingException;
 import com.example.caslogin.data.utils.exceptions.UnexpectedHTTPStatusCode;
 import com.example.caslogin.data.utils.httpclient.HttpClient;
+import com.example.caslogin.data.utils.httpclient.HttpConstants;
+import com.example.caslogin.data.utils.httpclient.HttpUtils;
 
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
@@ -13,19 +15,16 @@ import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import java.net.URLEncoder;
-import java.nio.ByteBuffer;
-import java.nio.CharBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.zip.GZIPInputStream;
 
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLSocketFactory;
 
-public class NativeHttpClient implements HttpClient {
+public class JavaHttpClient implements HttpClient {
 
 	/*
 	 * DISCLAIMER: This HTTP client implementation DOES NOT check which cookies belong
@@ -33,7 +32,7 @@ public class NativeHttpClient implements HttpClient {
 	 * for any domain. Please use different instances to handle different websites.
 	 */
 
-	private static final String LOG_TAG = "NativeHttpClient";
+	private static final String LOG_TAG = "JavaHttpClient";
 	private static final String ACCEPT_ENCODING = "gzip"; // Fixed value for gzip support.
 
 	private String USER_AGENT = "Mozilla/5.0";
@@ -52,7 +51,7 @@ public class NativeHttpClient implements HttpClient {
 	private List<String> cookies;
 	private int lastStatusCode = -1;
 
-	public NativeHttpClient() {
+	public JavaHttpClient() {
 		cookies = new ArrayList<>();
 		sf = new TLSSocketFactory();
 	}
@@ -126,7 +125,7 @@ public class NativeHttpClient implements HttpClient {
 	/*
 	 * Sends a HTTPS POST request to an URL and gets the response back.
 	 */
-	public String httpsPostForm(String url, char[] postParams) throws IOException, HttpClientException, UnexpectedHTTPStatusCode {
+	public String httpsPostForm(String url, String postParams) throws IOException, HttpClientException, UnexpectedHTTPStatusCode {
 
 		URL obj = new URL(url); // transform String to URL
 
@@ -153,7 +152,7 @@ public class NativeHttpClient implements HttpClient {
 		}
 		conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded"); // Set content type to http form
 																						// response.
-		conn.setRequestProperty("Content-Length", Integer.toString(postParams.length)); // Length of post request
+		conn.setRequestProperty("Content-Length", Integer.toString(postParams.getBytes().length)); // Length of post request
 		if (cookies != null) { // If we have cookies stored, add them to the header.
 			for (String cookie : cookies) {
 				conn.addRequestProperty("Cookie", cookie.split(";", 1)[0]); // Cookie attributes are separated with a
@@ -169,10 +168,8 @@ public class NativeHttpClient implements HttpClient {
 
 		String responseString = null; // String containing response data.
 
-		// TODO: Figure out gzip transport for POST requests.
 		DataOutputStream outputStream = new DataOutputStream(conn.getOutputStream()); // Get connection outputStream and buffer it.
-		byte[] b = charsToBytes(postParams);
-		outputStream.write(b); // Write POST request to buffer.
+		outputStream.write(postParams.getBytes()); // Write POST request to buffer.
 		outputStream.flush(); // Flush buffer.
 		outputStream.close(); // Close data stream.
 
@@ -206,32 +203,6 @@ public class NativeHttpClient implements HttpClient {
 		return responseString;
 	}
 
-	/*
-	 * ## encodeParameters ## -This method gets two arrays of parameters and its
-	 * values, and encodes them on URL-ready format. Exceptions:
-	 * -UnsupportedEncodingException
-	 */
-
-	public String encodeParameters(String parameterName[], String parameterValue[]) throws UnsupportedEncodingException, URLEncodingException {
-		StringBuilder result = null;
-		if (parameterName.length == parameterValue.length) {
-			result = new StringBuilder();
-			for (int i = 0; i < parameterName.length; i++) {
-				String param = parameterName[i] + "=" + URLEncoder.encode(parameterValue[i], encoding.name());
-				if (result.length() == 0) {
-					result.append(param);
-				} else {
-					result.append("&" + param);
-				}
-			}
-		} else {
-			throw new URLEncodingException(
-					"Encoding Error: Arrays parameterName and parameterValue are not of the same length.");
-		}
-
-		return result.toString();
-	}
-
 	private void checkCookies(List<String> newCookies) {
 		//System.out.println("old     " + cookies);
 		//System.out.println("new     " + newCookies);
@@ -252,39 +223,6 @@ public class NativeHttpClient implements HttpClient {
 		}
 		//System.out.println("old+new " + cookies);
 	}
-	
-	public byte[] charsToBytes(char[] c) {
-		// Encode characters to a new ByteBuffer (CharBuffer.wrap does not copy the array)
-		ByteBuffer buf = encoding.encode(CharBuffer.wrap(c));
-		// Copy the contents to a byte array (similar to memcpy in c)
-		byte[] b = Arrays.copyOfRange(buf.array(), buf.position(), buf.limit());
-		Arrays.fill(buf.array(), (byte) 0); // Overwrite buffer array to protect passwords
-		// Remember to overwrite char array if not needed after this function!
-		return b;
-	}
-
-	/*  WORKAROUND for SSL handshake aborted by server: Retry until it works. Probably a server configuration issue.
-    See https://stackoverflow.com/questions/30538640/javax-net-ssl-sslexception-read-error-ssl-0x9524b800-i-o-error-during-system?lq=1
-    Also, ssl-test it: https://www.ssllabs.com/ssltest/analyze.html?d=cas.udc.es */
-	/*private int sslHandshakeFailureWorkaround(HttpURLConnection conn) throws IOException {
-		int count = HttpConstants.SSL_EXCEPTION_RETRY_MAX_COUNT;
-		SSLException e = null;
-		while (count > 0) {
-			try {
-				return conn.getResponseCode();
-			} catch (SSLException ex) {
-				e = ex;
-				count--;
-				Log.e(LOG_TAG, "SSL exception (retries remaining: " + count + "): " + e.getMessage());
-				try {
-					Thread.sleep(1000);
-				} catch (InterruptedException e1) {
-					e1.printStackTrace();
-				}
-			}
-		}
-		throw e;
-	}*/
 
 	public int getLastStatusCode() {
 		return lastStatusCode;
@@ -376,5 +314,9 @@ public class NativeHttpClient implements HttpClient {
 	
 	public void removeCookie(int index) {
 		cookies.remove(index);
+	}
+
+	public void destroy() {
+		// No need to close anything
 	}
 }
