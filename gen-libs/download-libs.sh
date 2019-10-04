@@ -1,36 +1,14 @@
 #!/bin/bash
 
-CURL_VERSION="7.46.0"
-OPENSSL_VERSION="1.0.2g"
-
-BASE_DIR="$PWD"
-
-OPENSSL_SRC_DIR="$BASE_DIR/src"
-CURL_SRC_DIR="$BASE_DIR/src"
-
-BLACK='\033[0;30m'
-DARK_GRAY='\033[1;30m'
-RED='\033[0;31m'
-LIGHT_RED='\033[1;31m'
-GREEN='\033[0;32m'
-LIGHT_GREEN='\033[1;32m'
-ORANGE='\033[0;33m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-LIGHT_BLUE='\033[1;34m'
-PURPLE='\033[0;35m'
-LIGHT_PURPLE='\033[1;35m'
-CYAN='\033[0;36m'
-LIGHT_CYAN='\033[1;36m'
-LIGHT_GRAY='\033[0;37m'
-WHITE='\033[1;37m'
-NC='\033[0m'
+source config-vars.sh
 
 create_tar_dir() {
     if [ ! -d {$BASE_DIR}/tar ]; then
         mkdir -p ${BASE_DIR}/tar
     fi
 }
+
+#TODO: Checksum of downladed files, redownload if corrupt.
 
 download_openssl() {
     if [ ! -f "${BASE_DIR}/tar/openssl-${OPENSSL_VERSION}.tar.gz" ]; then
@@ -51,20 +29,21 @@ download_curl() {
 }
 
 clean_sources() {
-    if [ -d {$BASE_DIR}/src ]; then
-        rm -rf ${BASE_DIR}/src
+    if [ -d {$BASE_SRC_DIR} ]; then
+        echo -e "-> Removing old source files..."
+        rm -rf ${BASE_SRC_DIR}
     fi
-    mkdir -p ${BASE_DIR}/src
+    mkdir -p ${BASE_SRC_DIR}
 }
 
 unpack_openssl() {
     echo -e "-> Unpacking OpenSSL source..."
-    tar xzf "${BASE_DIR}/tar/openssl-${OPENSSL_VERSION}.tar.gz" -C "${OPENSSL_SRC_DIR}"
+    tar xzf "${BASE_DIR}/tar/openssl-${OPENSSL_VERSION}.tar.gz" -C "${BASE_SRC_DIR}"
 }
 
 unpack_curl() {
     echo -e "-> Unpacking cURL source..."
-    tar xzf "${BASE_DIR}/tar/curl-${CURL_VERSION}.tar.gz" -C "${CURL_SRC_DIR}"
+    tar xzf "${BASE_DIR}/tar/curl-${CURL_VERSION}.tar.gz" -C "${BASE_SRC_DIR}"
 }
 
 # Main

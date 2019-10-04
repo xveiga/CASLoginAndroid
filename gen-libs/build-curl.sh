@@ -1,45 +1,29 @@
 #!/bin/bash
 
-CURL_VERSION="7.46.0"
+#CURL_VERSION="7.46.0"
 
 #TARGET_HOSTS=("armeabi-v7a" "arm64-v8a" "x86" "x86_64")
 #TARGET_HOSTS=("armeabi-v7a" "x86")
-TARGET_HOSTS=("armeabi-v7a")
 
-MIN_SDK_VERSION=21
+#MIN_SDK_VERSION=21
 
-HOST_TAG=linux-x86_64
-export ANDROID_NDK_HOME=$HOME/Android/Sdk/ndk/20.0.5594570
+#HOST_TAG=linux-x86_64
+#export ANDROID_NDK_HOME=$HOME/Android/Sdk/ndk/20.0.5594570
 
-BASE_DIR=${PWD}
-CURL_SRC_DIR="$BASE_DIR/src/curl-$CURL_VERSION"
-CURL_BUILD_DIR="$BASE_DIR/../distribution/curl"
-OPENSSL_BUILD_DIR="$BASE_DIR/../distribution/openssl"
+#BASE_DIR=${PWD}
+#CURL_SRC_DIR="$BASE_DIR/src/curl-$CURL_VERSION"
+#CURL_BUILD_DIR="$BASE_DIR/../distribution/curl"
+#OPENSSL_BUILD_DIR="$BASE_DIR/../distribution/openssl"
 
-NJOBS=$(getconf _NPROCESSORS_ONLN)
+#NJOBS=$(getconf _NPROCESSORS_ONLN)
 
-BLACK='\033[0;30m'
-DARK_GRAY='\033[1;30m'
-RED='\033[0;31m'
-LIGHT_RED='\033[1;31m'
-GREEN='\033[0;32m'
-LIGHT_GREEN='\033[1;32m'
-ORANGE='\033[0;33m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-LIGHT_BLUE='\033[1;34m'
-PURPLE='\033[0;35m'
-LIGHT_PURPLE='\033[1;35m'
-CYAN='\033[0;36m'
-LIGHT_CYAN='\033[1;36m'
-LIGHT_GRAY='\033[0;37m'
-WHITE='\033[1;37m'
-NC='\033[0m'
+# Load configuration
+source config-vars.sh
 
 export TOOLCHAIN=$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/$HOST_TAG
 PATH=$TOOLCHAIN/bin:$PATH
 
-echo -e "${YELLOW}Will build cURL for targets: ${TARGET_HOSTS[@]}${NC}"
+echo -e "${YELLOW}Will build cURL ${CURL_VERSION} for targets: ${TARGET_HOSTS[@]}${NC}"
 
 cd ${CURL_SRC_DIR}
 ./buildconf
@@ -77,7 +61,7 @@ for CURRENT_TARGET in "${TARGET_HOSTS[@]}"; do
             export STRIP=$TOOLCHAIN/bin/$TARGET_HOST-strip
         ;;
     esac
-    echo -e "${RED}SSL Build DIR: $OPENSSL_BUILD_DIR/$CURRENT_TARGET${NC}"
+    echo -e "${BLUE}Linking with OpenSSL from '$OPENSSL_BUILD_DIR/$CURRENT_TARGET${NC}''"
 
     export CFLAGS="-Oz -ffunction-sections -fdata-sections -fno-unwind-tables -fno-asynchronous-unwind-tables -I${OPENSSL_BUILD_DIR}/${CURRENT_TARGET}/include/openssl"
     export CPPFLAGS=${CFLAGS}
@@ -122,10 +106,10 @@ for CURRENT_TARGET in "${TARGET_HOSTS[@]}"; do
     make -j$NJOBS
     make install
     make clean
-    echo -e "${LIGHT_GREEN}Completed build for ${CURRENT_TARGET}${NC}"
+    echo -e "${LIGHT_GREEN}Completed cURL build for ${CURRENT_TARGET}${NC}"
 
 done;
 
-echo -e "${LIGHT_GREEN}Completed builds for targets: ${TARGET_HOSTS[@]}${NC}"
+echo -e "${LIGHT_GREEN}Completed cURL ${CURL_VERSION} builds for targets: ${TARGET_HOSTS[@]}${NC}"
 
 cd ..

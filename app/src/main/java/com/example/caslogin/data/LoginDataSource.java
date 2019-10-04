@@ -64,11 +64,11 @@ public class LoginDataSource {
             // 7. Log out session for moodle service
             cas.logout(moodleServiceParam);*/
 
-            // CURL TEST
+            // CURL TEST. TODO: Use a factory to choose between Java HTTP client and curl
             String curlResult = curlTest();
             Log.e(LOG_TAG, curlResult);
             if (curlResult == null || curlResult.isEmpty()) throw new Exception("Curl Failure, check logs");
-            LoggedInUser user = new LoggedInUser((long) 0, "Jane Doe");
+            LoggedInUser user = new LoggedInUser((long) 0, curlResult.substring(0, 50));
             return new Result.Success<>(user);
         } catch (Exception e) {
             Log.e(LOG_TAG, "Exception: " + e.toString());
