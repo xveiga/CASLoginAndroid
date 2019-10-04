@@ -4,7 +4,8 @@
 OPENSSL_VERSION="1.0.2g"
 
 # Clang options: -Oz (optimize size smallest possible), -fno-integrated-as (less strict inline asm rules)
-OPENSSL_CONFIGURATION="enable-weak-ssl-ciphers enable-ssl2 enable-ssl3 enable-ssl3-method no-shared no-tests no-deprecated zlib -Oz -fno-integrated-as"
+#OPENSSL_CONFIGURATION="enable-weak-ssl-ciphers enable-ssl2 enable-ssl3 enable-ssl3-method no-shared no-tests no-deprecated zlib -Oz -fno-integrated-as"
+OPENSSL_CONFIGURATION="enable-weak-ssl-ciphers enable-ssl2 enable-ssl3 enable-ssl3-method -fPIC -Oz -fno-integrated-as"
 
 #TARGET_HOSTS=("armeabi-v7a" "arm64-v8a" "x86" "x86_64")
 TARGET_HOSTS=("armeabi-v7a" "x86")
@@ -12,7 +13,7 @@ TARGET_HOSTS=("armeabi-v7a" "x86")
 MIN_SDK_VERSION=21
 
 HOST_TAG=linux-x86_64
-export ANDROID_NDK_HOME=$HOME/Android/android-ndk-r20
+export ANDROID_NDK_HOME=$HOME/Android/Sdk/ndk/20.0.5594570
 
 BASE_DIR="$PWD"
 OPENSSL_SRC_DIR="$BASE_DIR/src/openssl-${OPENSSL_VERSION}"

@@ -1,22 +1,20 @@
 #!/bin/bash
 
-CURL_VERSION="7.64.1"
+CURL_VERSION="7.46.0"
 
 #TARGET_HOSTS=("armeabi-v7a" "arm64-v8a" "x86" "x86_64")
-TARGET_HOSTS=("armeabi-v7a" "x86")
+#TARGET_HOSTS=("armeabi-v7a" "x86")
+TARGET_HOSTS=("armeabi-v7a")
 
 MIN_SDK_VERSION=21
 
 HOST_TAG=linux-x86_64
-export ANDROID_NDK_HOME=$HOME/Android/android-ndk-r20
+export ANDROID_NDK_HOME=$HOME/Android/Sdk/ndk/20.0.5594570
 
 BASE_DIR=${PWD}
 CURL_SRC_DIR="$BASE_DIR/src/curl-$CURL_VERSION"
 CURL_BUILD_DIR="$BASE_DIR/../distribution/curl"
 OPENSSL_BUILD_DIR="$BASE_DIR/../distribution/openssl"
-
-export CFLAGS="-Oz -ffunction-sections -fdata-sections -fno-unwind-tables -fno-asynchronous-unwind-tables"
-export LDFLAGS="-Wl,-s -Wl,-Bsymbolic -Wl,--gc-sections"
 
 NJOBS=$(getconf _NPROCESSORS_ONLN)
 
@@ -79,11 +77,16 @@ for CURRENT_TARGET in "${TARGET_HOSTS[@]}"; do
             export STRIP=$TOOLCHAIN/bin/$TARGET_HOST-strip
         ;;
     esac
+    echo -e "${RED}SSL Build DIR: $OPENSSL_BUILD_DIR/$CURRENT_TARGET${NC}"
 
-    ./configure --host=$TARGET_HOST \
-                --target=$TARGET_HOST \
-                --prefix=$CURL_BUILD_DIR/$CURRENT_TARGET \
-                --with-ssl=$OPENSSL_BUILD_DIR/$CURRENT_TARGET \
+    export CFLAGS="-Oz -ffunction-sections -fdata-sections -fno-unwind-tables -fno-asynchronous-unwind-tables -I${OPENSSL_BUILD_DIR}/${CURRENT_TARGET}/include/openssl"
+    export CPPFLAGS=${CFLAGS}
+    export LDFLAGS="-Wl,-s -Wl,-Bsymbolic -Wl,--gc-sections -L${OPENSSL_BUILD_DIR}/${CURRENT_TARGET}/lib"
+
+    ./configure --host=${TARGET_HOST} \
+                --target=${TARGET_HOST} \
+                --prefix=${CURL_BUILD_DIR}/${CURRENT_TARGET} \
+                --with-ssl=${OPENSSL_BUILD_DIR}/${CURRENT_TARGET} \
                 --disable-shared \
                 --disable-verbose \
                 --disable-manual \
@@ -105,6 +108,7 @@ for CURRENT_TARGET in "${TARGET_HOSTS[@]}"; do
                 --disable-gopher \
                 --disable-imap \
                 --disable-imaps \
+                --disable-ldap \
                 --disable-pop3 \
                 --disable-pop3s \
                 --disable-smb \
@@ -114,7 +118,7 @@ for CURRENT_TARGET in "${TARGET_HOSTS[@]}"; do
                 --disable-telnet \
                 --disable-tftp
 
-    echo -e "${YELLOW}Building cURL for $CURRENT_TARGET build...${NC}"
+    echo -e "${YELLOW}Building cURL for ${CURRENT_TARGET} build...${NC}"
     make -j$NJOBS
     make install
     make clean

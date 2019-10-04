@@ -1,6 +1,6 @@
-#!/bin/sh
+#!/bin/bash
 
-CURL_VERSION="7.64.1"
+CURL_VERSION="7.46.0"
 OPENSSL_VERSION="1.0.2g"
 
 BASE_DIR="$PWD"
@@ -34,19 +34,19 @@ create_tar_dir() {
 
 download_openssl() {
     if [ ! -f "${BASE_DIR}/tar/openssl-${OPENSSL_VERSION}.tar.gz" ]; then
-        echo "${ORANGE}-> Downloading OpenSSL ${OPENSSL_VERSION} sources${NC}"
+        echo -e "${ORANGE}-> Downloading OpenSSL ${OPENSSL_VERSION} sources${NC}"
         curl -Lo "${BASE_DIR}/tar/openssl-${OPENSSL_VERSION}.tar.gz" "https://www.openssl.org/source/openssl-${OPENSSL_VERSION}.tar.gz"
     else
-        echo "${GREEN}-> OpenSSL $OPENSSL_VERSION archive found${NC}"
+        echo -e "${GREEN}-> OpenSSL $OPENSSL_VERSION archive found${NC}"
     fi
 }
 
 download_curl() {
     if [ ! -f "${BASE_DIR}/tar/curl-${CURL_VERSION}.tar.gz" ]; then
-        echo "${ORANGE}-> Downloading cURL ${CURL_VERSION} sources${NC}"
+        echo -e "${ORANGE}-> Downloading cURL ${CURL_VERSION} sources${NC}"
         curl -Lo "${BASE_DIR}/tar/curl-${CURL_VERSION}.tar.gz" "https://curl.haxx.se/download/curl-${CURL_VERSION}.tar.gz"
     else
-        echo "${GREEN}-> cURL ${CURL_VERSION} archive found${NC}"
+        echo -e "${GREEN}-> cURL ${CURL_VERSION} archive found${NC}"
     fi
 }
 
@@ -58,18 +58,18 @@ clean_sources() {
 }
 
 unpack_openssl() {
-    echo "-> Unpacking OpenSSL source..."
+    echo -e "-> Unpacking OpenSSL source..."
     tar xzf "${BASE_DIR}/tar/openssl-${OPENSSL_VERSION}.tar.gz" -C "${OPENSSL_SRC_DIR}"
 }
 
 unpack_curl() {
-    echo "-> Unpacking cURL source..."
+    echo -e "-> Unpacking cURL source..."
     tar xzf "${BASE_DIR}/tar/curl-${CURL_VERSION}.tar.gz" -C "${CURL_SRC_DIR}"
 }
 
 # Main
 
-echo "Checking if original sources exist..."
+echo -e "Checking if original sources exist..."
 
 create_tar_dir
 clean_sources
@@ -80,4 +80,4 @@ unpack_openssl
 download_curl
 unpack_curl
 
-echo "${LIGHT_CYAN}Done. Run './build-openssl.sh' next.${NC}"
+echo -e "${LIGHT_CYAN}Done. Run './build-openssl.sh' next.${NC}"
