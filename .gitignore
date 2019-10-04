@@ -9,3 +9,6 @@
 .externalNativeBuild
 .idea
 app/.cxx
+gen-libs/src
+gen-libs/tar
+distribution/*

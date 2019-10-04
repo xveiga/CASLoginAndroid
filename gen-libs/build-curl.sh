@@ -1,10 +1,6 @@
 #!/bin/bash
 
-# For version 1.0.2g, view workaround below
-OPENSSL_VERSION="1.0.2g"
-
-# Clang options: -Oz (optimize size smallest possible), -fno-integrated-as (less strict inline asm rules)
-OPENSSL_CONFIGURATION="enable-weak-ssl-ciphers enable-ssl2 enable-ssl3 enable-ssl3-method no-shared no-tests no-deprecated zlib -Oz -fno-integrated-as"
+CURL_VERSION="7.64.1"
 
 #TARGET_HOSTS=("armeabi-v7a" "arm64-v8a" "x86" "x86_64")
 TARGET_HOSTS=("armeabi-v7a" "x86")
@@ -14,13 +10,10 @@ MIN_SDK_VERSION=21
 HOST_TAG=linux-x86_64
 export ANDROID_NDK_HOME=$HOME/Android/android-ndk-r20
 
-BASE_DIR="$PWD"
-OPENSSL_SRC_DIR="$BASE_DIR/src/openssl-${OPENSSL_VERSION}"
+BASE_DIR=${PWD}
+CURL_SRC_DIR="$BASE_DIR/src/curl-$CURL_VERSION"
+CURL_BUILD_DIR="$BASE_DIR/../distribution/curl"
 OPENSSL_BUILD_DIR="$BASE_DIR/../distribution/openssl"
-
-# Workaround for version 1.0.2g and newer NDK's that only use clang:
-# Remove -mandroid flags in Configure script. Not supported by clang.
-sed -i 's/-mandroid//g' ${OPENSSL_SRC_DIR}/Configure
 
 export CFLAGS="-Oz -ffunction-sections -fdata-sections -fno-unwind-tables -fno-asynchronous-unwind-tables"
 export LDFLAGS="-Wl,-s -Wl,-Bsymbolic -Wl,--gc-sections"
@@ -48,16 +41,17 @@ NC='\033[0m'
 export TOOLCHAIN=$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/$HOST_TAG
 PATH=$TOOLCHAIN/bin:$PATH
 
-cd $OPENSSL_SRC_DIR
+echo -e "${YELLOW}Will build cURL for targets: ${TARGET_HOSTS[@]}${NC}"
 
-echo -e "${YELLOW}Will build OpenSSL for targets: ${TARGET_HOSTS[@]}${NC}"
+cd ${CURL_SRC_DIR}
+./buildconf
 
 for CURRENT_TARGET in "${TARGET_HOSTS[@]}"; do
 
-    echo -e "${GREEN}Configuring OpenSSL for $CURRENT_TARGET...${NC}"
+    echo -e "${GREEN}Configuring cURL for $CURRENT_TARGET...${NC}"
     case $CURRENT_TARGET in
         armeabi-v7a)
-            mkdir -p $OPENSSL_BUILD_DIR/$CURRENT_TARGET
+            mkdir -p $CURL_BUILD_DIR/$CURRENT_TARGET
 
             TARGET_HOST=armv7a-linux-androideabi
             echo -e "${GREEN}-> Setting target host as $TARGET_HOST${NC}"
@@ -69,15 +63,9 @@ for CURRENT_TARGET in "${TARGET_HOSTS[@]}"; do
             export RANLIB=$TOOLCHAIN/bin/arm-linux-androideabi-ranlib
             export NM=$TOOLCHAIN/bin/arm-linux-androideabi-nm
             export STRIP=$TOOLCHAIN/bin/arm-linux-androideabi-strip
-
-            # Configured as generic android due to asm clang errors
-            ./Configure android $OPENSSL_CONFIGURATION \
-            -DANDROID -D__ANDROID_API__=$MIN_SDK_VERSION \
-            -DANDROID_ABI=armeabi-v7a \
-            --prefix=$OPENSSL_BUILD_DIR/$CURRENT_TARGET
         ;;
         x86)
-            mkdir -p $OPENSSL_BUILD_DIR/$CURRENT_TARGET
+            mkdir -p $CURL_BUILD_DIR/$CURRENT_TARGET
 
             TARGET_HOST=i686-linux-android
             echo -e "${GREEN}-> Setting target host as $TARGET_HOST${NC}"
@@ -89,19 +77,47 @@ for CURRENT_TARGET in "${TARGET_HOSTS[@]}"; do
             export RANLIB=$TOOLCHAIN/bin/$TARGET_HOST-ranlib
             export NM=$TOOLCHAIN/bin/$TARGET_HOST-nm
             export STRIP=$TOOLCHAIN/bin/$TARGET_HOST-strip
-
-            ./Configure android-x86 $OPENSSL_CONFIGURATION \
-            -DANDROID -D__ANDROID_API__=$MIN_SDK_VERSION \
-            -DANDROID_ABI=$CURRENT_TARGET \
-            --prefix=$OPENSSL_BUILD_DIR/$CURRENT_TARGET
         ;;
     esac
 
-    echo -e "${YELLOW}Building OpenSSL for $CURRENT_TARGET build...${NC}"
-    make clean
-    make depend # Rebuild dependencies to prevent incompatible target problems
+    ./configure --host=$TARGET_HOST \
+                --target=$TARGET_HOST \
+                --prefix=$CURL_BUILD_DIR/$CURRENT_TARGET \
+                --with-ssl=$OPENSSL_BUILD_DIR/$CURRENT_TARGET \
+                --disable-shared \
+                --disable-verbose \
+                --disable-manual \
+                --disable-crypto-auth \
+                --disable-unix-sockets \
+                --disable-ares \
+                --disable-rtsp \
+                --disable-ipv6 \
+                --disable-proxy \
+                --disable-versioned-symbols \
+                --enable-hidden-symbols \
+                --without-libidn \
+                --without-librtmp \
+                --without-zlib \
+                --disable-dict \
+                --disable-file \
+                --disable-ftp \
+                --disable-ftps \
+                --disable-gopher \
+                --disable-imap \
+                --disable-imaps \
+                --disable-pop3 \
+                --disable-pop3s \
+                --disable-smb \
+                --disable-smbs \
+                --disable-smtp \
+                --disable-smtps \
+                --disable-telnet \
+                --disable-tftp
+
+    echo -e "${YELLOW}Building cURL for $CURRENT_TARGET build...${NC}"
     make -j$NJOBS
-    make install_sw
+    make install
+    make clean
     echo -e "${LIGHT_GREEN}Completed build for ${CURRENT_TARGET}${NC}"
 
 done;
