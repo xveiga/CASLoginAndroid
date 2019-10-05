@@ -72,7 +72,7 @@ Java_com_example_caslogin_data_utils_httpclient_curl_CurlHttpClient_curlGet(JNIE
         response.clear();
         lastCode = curl_easy_perform(curl);
         curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &lastHttpCode);
-        LOGD("CURLINFO_RESPONSE_CODE: %d", lastHttpCode);
+        LOGD("CURLINFO_RESPONSE_CODE: %ld", lastHttpCode);
         /* Check for errors */
         if (lastCode != CURLE_OK) {
             if (strlen(errbuf))
@@ -109,7 +109,7 @@ Java_com_example_caslogin_data_utils_httpclient_curl_CurlHttpClient_curlPost(JNI
         response.clear();
         lastCode = curl_easy_perform(curl);
         curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &lastHttpCode);
-        LOGD("CURLINFO_RESPONSE_CODE: %d", lastHttpCode);
+        LOGD("CURLINFO_RESPONSE_CODE: %ld", lastHttpCode);
         /* Check for errors */
         if (lastCode != CURLE_OK) {
             if (strlen(errbuf))
