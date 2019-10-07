@@ -1,5 +1,7 @@
 package com.example.caslogin.data.utils.httpclient.java;
 
+import android.content.Context;
+
 import com.example.caslogin.data.utils.exceptions.HttpClientException;
 import com.example.caslogin.data.utils.exceptions.URLEncodingException;
 import com.example.caslogin.data.utils.exceptions.UnexpectedHTTPStatusCode;
@@ -51,7 +53,7 @@ public class JavaHttpClient implements HttpClient {
 	private List<String> cookies;
 	private int lastStatusCode = -1;
 
-	public JavaHttpClient() {
+	public JavaHttpClient(Context c) {
 		cookies = new ArrayList<>();
 		sf = new TLSSocketFactory();
 	}

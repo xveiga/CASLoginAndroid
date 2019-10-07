@@ -1,17 +1,23 @@
 package com.example.caslogin.data.utils.httpclient.curl;
 
+import android.content.Context;
+import android.content.res.Resources;
+import android.net.Uri;
 import android.util.Log;
 
+import com.example.caslogin.App;
 import com.example.caslogin.BuildConfig;
+import com.example.caslogin.R;
 import com.example.caslogin.data.utils.exceptions.HttpClientException;
 import com.example.caslogin.data.utils.exceptions.UnexpectedHTTPStatusCode;
 import com.example.caslogin.data.utils.httpclient.HttpClient;
-import com.example.caslogin.data.utils.httpclient.HttpConstants;
-import com.example.caslogin.data.utils.httpclient.HttpUtils;
 
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.net.URL;
-import java.nio.charset.Charset;
+import java.io.InputStream;
 
 public class CurlHttpClient implements HttpClient {
 
@@ -22,7 +28,7 @@ public class CurlHttpClient implements HttpClient {
 		System.loadLibrary(BuildConfig.NATIVE_LIB_NAME);
 	}
 
-	public native void curlInit();
+	public native void curlInit(byte[] certdata);
 	public native void curlCleanup();
 	public native String curlGet(String url);
 	public native String curlPost(String url, String postfields);
@@ -31,11 +37,43 @@ public class CurlHttpClient implements HttpClient {
 	private static final String LOG_TAG = "CurlHttpClient";
 
 	public CurlHttpClient() {
-		curlInit();
+		// Load CA certificate store from res/raw/cacert.pem
+		/* Resources need to be loaded using the application context.
+		   The individual resource ID (integer) needs to be be referenced
+		   using the generated "R" class. */
+		/* As a workaround for the inability to get the application context from an "inner class",
+		   the App class that extends Application was created for this purpose. */
+
+		byte[] caCertData = loadResourceAsByteArray(App.instance.getApplicationContext().getResources(), R.raw.cacert);
+
+		curlInit(caCertData);
 	}
 
-	public String httpsGet(String url) throws IOException, UnexpectedHTTPStatusCode {
+	private byte[] loadResourceAsByteArray(Resources r, int resId) {
+		InputStream is;
+		try {
+			is = r.openRawResource(resId);
+			int count;
+			byte[] data = new byte[4096];
+			ByteArrayOutputStream buf = new ByteArrayOutputStream();
+			while ((count = is.read(data, 0, data.length)) != -1)
+				buf.write(data, 0, count);
+			return buf.toByteArray();
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return null; // Probably build-time error, not fixable in runtime, ignore data.
+	}
+
+	public String httpsGet(String url) throws UnexpectedHTTPStatusCode, HttpClientException {
 		String response = curlGet(url);
+		int code;
+		if ((code = curlHttpCode()) != 200)
+			throw new UnexpectedHTTPStatusCode("Received code " + code);
+		else if (code == 0)
+			throw new HttpClientException("cURL exception"); //TODO: Get cURL message from c code.
 		// Debug code to view redirects instead of handling them automatically with curl
 		/*Log.d(LOG_TAG, "GET " + url + ": " + response);
 		if (curlHttpCode()/100 == 3) {
@@ -45,8 +83,13 @@ public class CurlHttpClient implements HttpClient {
 		return response;
 	}
 
-	public String httpsPostForm(String url, String postParams) throws IOException, HttpClientException, UnexpectedHTTPStatusCode {
+	public String httpsPostForm(String url, String postParams) throws UnexpectedHTTPStatusCode, HttpClientException {
 		String response = curlPost(url, postParams);
+		int code;
+		if ((code = curlHttpCode()) != 200)
+			throw new UnexpectedHTTPStatusCode("Received code " + code);
+		else if (code == 0)
+			throw new HttpClientException("cURL exception"); //TODO: Get cURL message from c code.
 		// Debug code to view redirects instead of handling them automatically with curl
 		/*Log.d(LOG_TAG, "POST " + url + ": " + response);
 		if (curlHttpCode()/100 == 3) {

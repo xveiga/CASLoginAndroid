@@ -7,7 +7,7 @@ import java.io.IOException;
 
 public interface HttpClient {
 
-    String httpsGet(String url) throws IOException, UnexpectedHTTPStatusCode;
+    String httpsGet(String url) throws IOException, UnexpectedHTTPStatusCode, HttpClientException;
 
     String httpsPostForm(String url, String postParams) throws IOException, HttpClientException, UnexpectedHTTPStatusCode;
 

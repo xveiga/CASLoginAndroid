@@ -45,6 +45,9 @@ CURL_SRC_DIR="${BASE_DIR}/src/curl-$CURL_VERSION"
 CURL_BUILD_DIR="${BASE_DIR}/../distribution/curl"
 OPENSSL_BUILD_DIR="${BASE_DIR}/../distribution/openssl"
 
+# CA certificate store location
+CA_STORE_FILE="${BASE_DIR}/../app/src/main/res/raw/cacert.pem"
+
 # Maximum concurrent jobs while building.
 # By default, same as the number of processors.
 NJOBS=$(getconf _NPROCESSORS_ONLN)

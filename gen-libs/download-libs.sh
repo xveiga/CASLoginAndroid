@@ -29,6 +29,29 @@ download_curl() {
     fi
 }
 
+download_mozilla_certs() {
+    if [ ! -f ${CA_STORE_FILE} ]; then
+        echo -e "${ORANGE}-> Downloading Mozilla CA certificate store${NC}"
+        curl -Lo ${CA_STORE_FILE} "https://curl.haxx.se/ca/cacert.pem"
+    else
+        echo -e "${GREEN}-> Mozilla CA certificate store found, checking for updates.${NC}"
+        # Check if the shasum of the latest cert store matches and download if necessary.
+        echo -e "-> Checking sha256sums of local and remote files"
+        REMOTE_SHASUM=$(curl -L https://curl.haxx.se/ca/cacert.pem.sha256 2>/dev/null | cut -d ' ' -f 1)
+        LOCAL_SHASUM=$(sha256sum ${CA_STORE_FILE} | cut -d ' ' -f 1)
+        #echo "  Local  ${LOCAL_SHASUM}"
+        #echo "  Remote ${REMOTE_SHASUM}"
+        if [ "${LOCAL_SHASUM}" != "${REMOTE_SHASUM}" ]; then
+            echo -e "${ORANGE}-> Mozilla CA certificate store is outdated, updating...${NC}"
+            curl -Lo ${CA_STORE_FILE} "https://curl.haxx.se/ca/cacert.pem"
+            echo "${REMOTE_SHASUM}" > ${BASE_DIR}/tar/cacert.pem.sha256
+            echo -e "${GREEN}-> Mozilla CA certificate store is up to date${NC}"
+        else
+            echo -e "${GREEN}-> Mozilla CA certificate store is up to date${NC}"
+        fi
+    fi
+}
+
 clean_sources() {
     if [ -d {$BASE_SRC_DIR} ]; then
         echo -e "-> Removing old source files..."
@@ -59,5 +82,7 @@ unpack_openssl
 
 download_curl
 unpack_curl
+
+download_mozilla_certs
 
 echo -e "${LIGHT_CYAN}Done.${NC}"

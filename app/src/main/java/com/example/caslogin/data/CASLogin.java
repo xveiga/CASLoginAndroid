@@ -58,36 +58,43 @@ public class CASLogin {
         login(null, username, password, CAS_LOGIN_CONFIRMATION);
     }
 
-    // TODO: Check for illegal state exception: unmatched regex
     public void login(String service, String username, String password, String loginConfirmation) throws IOException, UnexpectedHTTPStatusCode, URLEncodingException, HttpClientException, CASLoginException {
-        String url = "";
-        if (service != null && !service.isEmpty())
-            url = "?service=" + URLEncoder.encode(service, encoding.name());
-        Log.v("CASLogin", "urlparams:" + url);
-        String loginContent = httpClient.httpsGet(baseURL + loginPage + url);
-        String actionUrl = findRegex(loginContent, formActionRegex, 1);
-        String[] formValues = {null, null, "e1s1", "submit", "Iniciar+sesión"};
-        formValues[0] = username;
-        formValues[1] = password;
-        String parameters = HttpUtils.encodeParameters(formKeys, formValues, encoding); // Encode parameters to send through HTTP.
-        String loginResponse = httpClient.httpsPostForm(baseURL + actionUrl, parameters);
-        //Log.v("CASLogin", "webpage:" + loginResponse);
-        if (!loginResponse.contains(loginConfirmation)) {
-            if (loginResponse.contains(loginWrongCredentials))
-                throw new CASLoginException("Wrong credentials");
-            else
-                throw new CASLoginException("Unknown error during login");
+        try {
+            String url = "";
+            if (service != null && !service.isEmpty())
+                url = "?service=" + URLEncoder.encode(service, encoding.name());
+            Log.v("CASLogin", "urlparams:" + url);
+            String loginContent = httpClient.httpsGet(baseURL + loginPage + url);
+            String actionUrl = findRegex(loginContent, formActionRegex, 1);
+            String[] formValues = {null, null, "e1s1", "submit", "Iniciar+sesión"};
+            formValues[0] = username;
+            formValues[1] = password;
+            String parameters = HttpUtils.encodeParameters(formKeys, formValues, encoding); // Encode parameters to send through HTTP.
+            String loginResponse = httpClient.httpsPostForm(baseURL + actionUrl, parameters);
+            //Log.v("CASLogin", "webpage:" + loginResponse);
+            if (!loginResponse.contains(loginConfirmation)) {
+                if (loginResponse.contains(loginWrongCredentials))
+                    throw new CASLoginException("Wrong credentials");
+                else
+                    throw new CASLoginException("Unknown error during login");
+            }
+        } catch (IllegalStateException e) {
+            throw new CASLoginException("Could not parse webpage: " + e.getMessage());
         }
     }
 
-    public void logout(String service) throws IOException, UnexpectedHTTPStatusCode, CASLoginException {
-        String url = "";
-        if (service != null && !service.isEmpty())
-            url = "?service=" + URLEncoder.encode(service, encoding.name());
-        String logoutContent = httpClient.httpsGet(baseURL + logoutPage + url);
-        //Log.v("CASLogin", "webpage:" + logoutContent);
-        if (!logoutContent.contains(logoutConfirmation))
-            throw new CASLoginException("Unknown error during logout");
+    public void logout(String service) throws IOException, UnexpectedHTTPStatusCode, CASLoginException, HttpClientException {
+        try {
+            String url = "";
+            if (service != null && !service.isEmpty())
+                url = "?service=" + URLEncoder.encode(service, encoding.name());
+            String logoutContent = httpClient.httpsGet(baseURL + logoutPage + url);
+            //Log.v("CASLogin", "webpage:" + logoutContent);
+            if (!logoutContent.contains(logoutConfirmation))
+                throw new CASLoginException("Unknown error during logout");
+        } catch (IllegalStateException e) {
+            throw new CASLoginException("Could not parse webpage: " + e.getMessage());
+        }
     }
 
     public HttpClient getHttpClient() {
