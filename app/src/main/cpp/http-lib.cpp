@@ -25,8 +25,6 @@
 
 using namespace std;
 
-static const char *pCACertFile = "res/raw/cacert.pem";
-
 CURL *curl;
 CURLcode lastCode;
 string response;
@@ -95,14 +93,13 @@ extern "C" JNIEXPORT void JNICALL
 Java_com_example_caslogin_data_utils_httpclient_curl_CurlHttpClient_curlInit(JNIEnv *env, jobject obj, jbyteArray jca_data) {
     curl_global_init(CURL_GLOBAL_DEFAULT);
     curl = curl_easy_init();
+    curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
     curl_easy_setopt(curl, CURLOPT_COOKIESESSION, 1L);
+    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 1L);
+    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 1L);
     curl_easy_setopt(curl, CURLOPT_CAINFO, NULL);
     curl_easy_setopt(curl, CURLOPT_CAPATH, NULL);
     curl_easy_setopt(curl, CURLOPT_SSLCERTTYPE, "PEM");
-    curl_easy_setopt(curl, CURLOPT_SSL_CTX_FUNCTION, sslctx_function);
-    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 1L);
-    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 1L);
-    curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
     curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, errbuf);
     curl_easy_setopt(curl, CURLOPT_COOKIEFILE, "");
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, &writeCallback);
@@ -118,7 +115,14 @@ Java_com_example_caslogin_data_utils_httpclient_curl_CurlHttpClient_curlInit(JNI
            the contents back (as we won't modify them).
            See https://developer.android.com/training/articles/perf-jni for details. */
         env->ReleaseByteArrayElements(jca_data, buf_ptr, JNI_ABORT);
-    }
+
+        // Finally, enable our custom ssl function to read the certificates.
+        curl_easy_setopt(curl, CURLOPT_SSL_CTX_FUNCTION, sslctx_function);
+    } /*else {
+        // Disable SSL verification if no certificate store is provided, as it will always fail.
+        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
+    }*/ // Bad idea, removing the cert file from the apk would allow the app to accept any potential malicious hosts.
 }
 
 extern "C" JNIEXPORT void JNICALL
@@ -134,12 +138,17 @@ Java_com_example_caslogin_data_utils_httpclient_curl_CurlHttpClient_curlHttpCode
     return lastHttpCode;
 }
 
+extern "C" JNIEXPORT jstring JNICALL
+Java_com_example_caslogin_data_utils_httpclient_curl_CurlHttpClient_curlErrorMsg(JNIEnv *env, jobject obj) {
+    return env->NewStringUTF(errbuf);
+}
 
 extern "C" JNIEXPORT jstring JNICALL
 Java_com_example_caslogin_data_utils_httpclient_curl_CurlHttpClient_curlGet(JNIEnv *env, jobject obj, jstring jurl) {
     const char *url = env->GetStringUTFChars(jurl, NULL);
 
     response.clear();
+    errbuf[0] = '\0'; // Clear error buffer
 
     if (curl) {
         curl_easy_setopt(curl, CURLOPT_URL, url);
@@ -147,20 +156,13 @@ Java_com_example_caslogin_data_utils_httpclient_curl_CurlHttpClient_curlGet(JNIE
         /* Perform the request, res will get the return code */
         lastCode = curl_easy_perform(curl);
         curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &lastHttpCode);
-        LOGD("CURLINFO_RESPONSE_CODE: %ld", lastHttpCode);
+        //LOGD("CURLINFO_RESPONSE_CODE: %ld", lastHttpCode);
         /* Check for errors */
-        if (lastCode != CURLE_OK) {
+        /*if (lastCode != CURLE_OK) {
             if (strlen(errbuf))
                 LOGE("curl_easy_perform() failed: %s\n", errbuf);
             else
                 LOGE("curl_easy_perform() failed: %s\n", curl_easy_strerror(lastCode));
-        } /*else {
-            if (lastHttpCode/100 == 3) {
-                char *redirecturl;
-                curl_easy_getinfo(curl, CURLINFO_REDIRECT_URL, &redirecturl);
-                LOGE("redirect: %s\n", redirecturl);
-                return env->NewStringUTF(redirecturl);
-            }
         }*/
     }
     env->ReleaseStringUTFChars(jurl, url);
@@ -173,30 +175,24 @@ Java_com_example_caslogin_data_utils_httpclient_curl_CurlHttpClient_curlPost(JNI
     const char *url = env->GetStringUTFChars(jurl, NULL);
     const char *postfields = env->GetStringUTFChars(jpostfields, NULL);
 
+    errbuf[0] = '\0'; // Clear error buffer
     response.clear();
 
     if (curl) {
         curl_easy_setopt(curl, CURLOPT_URL, url);
         curl_easy_setopt(curl, CURLOPT_POSTFIELDS, postfields);
-        LOGD("postfields: %s\n", postfields);
+        //LOGD("postfields: %s\n", postfields);
 
         /* Perform the request, res will get the return code */
         lastCode = curl_easy_perform(curl);
         curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &lastHttpCode);
-        LOGD("CURLINFO_RESPONSE_CODE: %ld", lastHttpCode);
+        //LOGD("CURLINFO_RESPONSE_CODE: %ld", lastHttpCode);
         /* Check for errors */
-        if (lastCode != CURLE_OK) {
+        /*if (lastCode != CURLE_OK) {
             if (strlen(errbuf))
                 LOGE("curl_easy_perform() failed: %s\n", errbuf);
             else
                 LOGE("curl_easy_perform() failed: %s\n", curl_easy_strerror(lastCode));
-        } /*else {
-            if ((lastHttpCode/100) == 3) {
-                char *redirecturl;
-                curl_easy_getinfo(curl, CURLINFO_REDIRECT_URL, &redirecturl);
-                LOGE("redirect: %s\n", redirecturl);
-                return env->NewStringUTF(redirecturl);
-            }
         }*/
     }
     env->ReleaseStringUTFChars(jurl, url);

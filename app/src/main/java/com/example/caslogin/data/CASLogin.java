@@ -63,7 +63,7 @@ public class CASLogin {
             String url = "";
             if (service != null && !service.isEmpty())
                 url = "?service=" + URLEncoder.encode(service, encoding.name());
-            Log.v("CASLogin", "urlparams:" + url);
+            //Log.v("CASLogin", "urlparams:" + url);
             String loginContent = httpClient.httpsGet(baseURL + loginPage + url);
             String actionUrl = findRegex(loginContent, formActionRegex, 1);
             String[] formValues = {null, null, "e1s1", "submit", "Iniciar+sesión"};

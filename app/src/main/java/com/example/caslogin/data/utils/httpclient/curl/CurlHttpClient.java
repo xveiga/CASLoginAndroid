@@ -33,6 +33,7 @@ public class CurlHttpClient implements HttpClient {
 	public native String curlGet(String url);
 	public native String curlPost(String url, String postfields);
 	public native int curlHttpCode();
+	public native String curlErrorMsg();
 
 	private static final String LOG_TAG = "CurlHttpClient";
 
@@ -69,34 +70,38 @@ public class CurlHttpClient implements HttpClient {
 
 	public String httpsGet(String url) throws UnexpectedHTTPStatusCode, HttpClientException {
 		String response = curlGet(url);
-		int code;
-		if ((code = curlHttpCode()) != 200)
-			throw new UnexpectedHTTPStatusCode("Received code " + code);
+		int code = curlHttpCode();
+		if (code == 200)
+			return response;
 		else if (code == 0)
-			throw new HttpClientException("cURL exception"); //TODO: Get cURL message from c code.
-		// Debug code to view redirects instead of handling them automatically with curl
-		/*Log.d(LOG_TAG, "GET " + url + ": " + response);
-		if (curlHttpCode()/100 == 3) {
-			Log.d(LOG_TAG, "Redirect: " + response);
-			response = httpsGet(response);
-		}*/
-		return response;
-	}
-
-	public String httpsPostForm(String url, String postParams) throws UnexpectedHTTPStatusCode, HttpClientException {
-		String response = curlPost(url, postParams);
-		int code;
-		if ((code = curlHttpCode()) != 200)
+			throw new HttpClientException(curlErrorMsg());
+		else
 			throw new UnexpectedHTTPStatusCode("Received code " + code);
-		else if (code == 0)
-			throw new HttpClientException("cURL exception"); //TODO: Get cURL message from c code.
 		// Debug code to view redirects instead of handling them automatically with curl
 		/*Log.d(LOG_TAG, "POST " + url + ": " + response);
 		if (curlHttpCode()/100 == 3) {
 			Log.d(LOG_TAG, "Redirect: " + response);
 			response = httpsGet(response);
-		}*/
-		return response;
+		}
+		return response;*/
+	}
+
+	public String httpsPostForm(String url, String postParams) throws UnexpectedHTTPStatusCode, HttpClientException {
+		String response = curlPost(url, postParams);
+		int code = curlHttpCode();
+		if (code == 200)
+			return response;
+		else if (code == 0)
+			throw new HttpClientException(curlErrorMsg());
+		else
+			throw new UnexpectedHTTPStatusCode("Received code " + code);
+		// Debug code to view redirects instead of handling them automatically with curl
+		/*Log.d(LOG_TAG, "POST " + url + ": " + response);
+		if (curlHttpCode()/100 == 3) {
+			Log.d(LOG_TAG, "Redirect: " + response);
+			response = httpsGet(response);
+		}
+		return response;*/
 	}
 
 	public int getLastStatusCode() {
