@@ -30,6 +30,10 @@ download_curl() {
 }
 
 download_mozilla_certs() {
+    # Create directories if they do not exist
+    if [ ! -d $(dirname ${CA_STORE_FILE}) ]; then
+        mkdir -p $(dirname ${CA_STORE_FILE})
+    fi
     if [ ! -f ${CA_STORE_FILE} ]; then
         echo -e "${ORANGE}-> Downloading Mozilla CA certificate store${NC}"
         curl -Lo ${CA_STORE_FILE} "https://curl.haxx.se/ca/cacert.pem"
